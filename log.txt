@@ -1,0 +1,4 @@
+file.c: In function ‘main’:
+file.c:5:1: error: unknown type name ‘jd’
+file.c:7:1: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘}’ token
+file.c:7:1: error: expected declaration or statement at end of input

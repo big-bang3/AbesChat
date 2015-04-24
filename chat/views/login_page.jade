@@ -1,0 +1,17 @@
+html
+	span(style="color:red")
+		|#{message}
+	h2.
+		Register User here --> 
+	br
+	form(action="/register" method="post")
+		input(type="text" placeholder="username" name="name")
+		input(type="password" placeholder="password" name="passw")
+		input(type="submit")
+	h2.
+		Login here -->
+	br
+	form(action="/login" method="post")
+		input(type="text" placeholder="username" name="name")
+		input(type="password" placeholder="password" name="passw")
+		input(type="submit") 

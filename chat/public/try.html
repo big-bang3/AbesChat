@@ -1,0 +1,153 @@
+html(ng-app="chat" ng-controller="control")
+    script(src="/javascripts/angular.min.js")
+    script(src="/javascripts/angular-socket.js")
+    script(src="/socket.io/socket.io.js")
+    link(rel="stylesheet" href="/stylesheets/materialize.css")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no")
+
+    //script(src="/javascripts/angular-sanitize.min.js")
+    script.
+        var app = angular.module('chat',['socket.io']);
+        var recid; 
+        app.controller('control',['$scope','$socket',function($scope,$socket){
+            $scope.content = [];
+            $scope.message = {};
+            //function to hide notification of msg 
+            $scope.hidecol = function(data){
+                document.getElementById(data).style.backgroundColor = "#cfd8dc";
+
+            };
+
+            //end fn
+            $socket.emit('user_data',{name:"#{name}",id:"#{my_id}"})
+            // funtion called on click ----->
+            $scope.send_message = function(data){
+                if($scope.content.indexOf(data) == -1)
+                $scope.content.push(data);
+                var dat = {id1:data._id,id2:"#{my_id}"}
+                $socket.emit('message_list',dat);
+            };
+            // end function
+            $socket.on('display_msgs',function(data){
+                for(var i = 0;i < data.res.length ; i++)
+                    {
+                        try{
+                            $scope.message[data.rec].push(data.res[i]);
+                        }
+                        catch(err){
+                        $scope.message[data.rec] = [];
+                        $scope.message[data.rec].push(data.res[i]);
+                        }
+
+                    };
+
+
+
+                });
+            //function called on submit ---->>
+            $scope.submit_m = function(data){
+                recid = data._id;
+                // on receiving data from socket
+                var mes = document.getElementById("^"+recid).value;
+                document.getElementById("^"+recid).value="";
+                
+                if(!$scope.message){
+                    $scope.message = {} ;
+                }
+
+                if(!$scope.message[recid]){
+                    $scope.message[recid] = [];
+                }
+                
+                
+                var get_elem = document.getElementById(recid);
+                get_elem.scrollTop = get_elem.scrollHeight;
+                var mess = {from:"#{my_id}",mes_to:recid,message:mes,from_name:"#{name}"};
+                $scope.message[recid].push(mess);
+                if(data.socket_id){
+                //send to socket
+                
+                $socket.emit('message',mess);
+
+                }
+
+                else{
+                // send to the offline user
+
+
+                }
+
+            };
+            // end function 
+
+            $socket.on('new_text',function(data){
+                var get = document.getElementById(data.from);
+                try{
+                    get.style.backgroundColor="#e0e0e0";
+                    get.scrollTop = get.scrollHeight;
+                }
+                catch(err){console.log(err);
+                    $scope.new_messages+=1;
+                }
+                try{    
+                    $scope.message[data.from].push(data);
+                }
+                catch(err){console.log(err);
+                    $scope.message[data.from] = [];
+                    $scope.message[data.from].push(data);
+                }
+                 
+            
+            });
+
+            $socket.on('list',function(data){
+                $scope.new_messages = 0; // get unread msgs from db
+                $scope.list = data;
+            });
+
+
+            }]);
+    body(background="/images/background.jpg")
+        div.z-depth-3.navbar-fixed
+            nav.red
+                div.nav-wrapper.container
+                    ul
+                        li 
+                            a(href="#") Welcome #{name}
+                        li
+                            a(href="#") Messages {{new_messages}}
+                        li.right
+                            a.right.waves-effect.waves-light(href="/logout") Log out
+        
+        div.z-depth-1.indigo.lighten-3.center(style="height:90%;position:fixed;right:0px;width:10%;")
+                div(ng-repeat="x in list" style="padding:5px")
+                    div(ng-if='x.socket_id!=false && x.name!="#{name}"')
+                        i.mdi-image-lens
+                            a(href="",ng-click="send_message(x)")  {{ x.name }}
+                    
+                                        
+                    div(ng-if="!x.socket_id")
+                        a(href="",ng-click="send_message(x)")  {{ x.name }}
+            
+
+        .row
+            .container
+                div.col.s10.m4(ng-repeat="data in content" )
+                    span.left {{data.name}}
+                    br    
+                    div.section.collection(style="height:100px;max-height:100px;overflow:auto;",id="{{data._id}}")
+                        span(ng-repeat="mes in message[data._id] track by $index")
+                            div(ng-if='mes.from=="#{my_id}"' style="padding:3px;padding-left:5px;")
+                                span.left {{mes.message}}
+                            div(ng-if='mes.from!="#{my_id}"' style="padding:3px;padding-right:5px;")
+                                span.right {{mes.message}}
+                            br
+                    .input-field    
+                        textarea.materialize-textarea(ng-focus="hidecol(data._id)",id="^{{data._id}}")
+                        label(for="sendmess") Message
+                    button.btn.left(ng-click="content.splice($index,1)") close
+                    button.waves-effect.waves-light.btn.right(ng-click="submit_m(data)") send
+                                                    
+            
+    script(src="javascripts/jquery.min.js")
+    script(src="javascripts/materialize.min.js")

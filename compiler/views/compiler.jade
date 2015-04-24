@@ -1,0 +1,23 @@
+html    
+    script(src="javascripts/angular.min.js")
+
+    script.
+        var Myapp = angular.module("comp", []);
+        Myapp.controller('control_comp',function cal_comp($scope,$http){
+           $scope.cal = function(){
+           $scope.status = '';
+            $http.post("http://127.0.0.1:3000/submit",{code:$scope.my_code}).success(function(data,status,headers,config){
+                $scope.status = data;        
+                });
+            };
+                    
+            });
+
+    body(ng-app="comp" ng-controller="control_comp")
+        h3.
+            Compile your C code here
+        textarea(rows=20,cols=20,name="text",ng-model="my_code")
+        input(type="button",value='submit',id="send",ng-click="cal();")
+        br
+        pre
+            {{status}}

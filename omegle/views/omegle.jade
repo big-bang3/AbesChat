@@ -1,0 +1,77 @@
+doctype html
+html
+  head
+    script(src='/socket.io/socket.io.js')
+    |   
+    script(src='/javascripts/jquery.min.js')
+    |     
+    title Hello
+    |   
+    script.
+      var my_interval;
+      var entityMap = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': '&quot;',
+      "'": '&#39;',
+      "/": '&#x2F;'
+      };
+      function escapeHtml(string) {
+      return String(string).replace(/[&<>"'\\/]/g, function (s) {
+      return entityMap[s];
+      });
+      }
+      var temp_addrs = '';
+      var socket = io();
+      $('document').ready(function(){
+      $('#Div1').hide();
+      $('#Div3').show();
+      socket.emit('essentials','');
+      socket.on('addrs',function(addrs){
+      temp_addrs = addrs;
+      if(temp_addrs){
+      $('#Div1').show();
+      $('#Div3').hide();
+      socket.emit('sender_addrs',temp_addrs);
+      }
+      });
+      
+      //refresh after 5 seconds
+        setTimeout(function(){if(temp_addrs == '')location.reload();}, 10000);
+        
+      $('#Div1').keydown(function(key){
+        if(key.which == 13 && !key.shiftKey) 
+          $('#send').trigger("click");
+      })
+      $('#send').click(function(){
+      var temp_msg = $('#msg_send').val();
+      $('#msg_send').val('');
+      socket.emit('send_msg',{msg:temp_msg,addrs:temp_addrs});
+      $('#Div2').append('<span style="color:blue">You </span>: ' + escapeHtml(temp_msg) +'<br>' );
+      $('#Div2').scrollTop($('#Div2')[0].scrollHeight);
+      });
+      socket.on('recv_msg',function(recv_msg){
+      $('#Div2').append('<span style="color:red">Stranger </span>: ' + escapeHtml(recv_msg) +'<br>');
+      $('#Div2').scrollTop($('#Div2')[0].scrollHeight);
+      })
+      socket.on('info',function(info){
+        $('#Div2').empty();
+        $('#Div1').hide();
+        location.reload();
+      });
+      });
+  body
+      
+
+    #Div2(style="width:1200px ;max-height:400px;overflow:auto;height:400px ;border:2px solid black")
+    |   
+    br
+    #Div3.
+      Finding users to Connect .... 
+    #Div1
+      textarea#msg_send(cols='60', rows='10')
+      input#send(type='button',value="Send message")
+      |     
+    |     
+    

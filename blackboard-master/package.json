@@ -1,0 +1,34 @@
+{
+   "name":"blackboard",
+   "description":"Hands on lesson plan utility",
+   "version":"0.0.1",
+   "homepage":"http://github.com/wearefractal/blackboard",
+   "repository":"git://github.com/wearefractal/blackboard.git",
+   "author":"Fractal <contact@wearefractal.com> (http://wearefractal.com/)",
+   "main":"./index.js",
+   
+   "dependencies":{
+      "nop":"*",
+      "blessed":"*",
+      "msee":"*",
+      "optimist":"*",
+      "data-file":"*",
+      "puzzle-box":"*"
+   },
+   "devDependencies":{
+      "mocha":"*",
+      "should":"*"
+   },
+   "scripts":{
+      "test":"mocha"
+   },
+   "engines":{
+      "node":">= 0.4.0"
+   },
+   "licenses":[
+      {
+         "type":"MIT",
+         "url":"http://github.com/wearefractal/blackboard/raw/master/LICENSE"
+      }
+   ]
+}

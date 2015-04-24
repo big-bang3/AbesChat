@@ -1,0 +1,248 @@
+html(ng-app="chat" ng-controller="control")
+    script(src="/javascripts/angular.min.js")
+    script(src="/javascripts/angular-socket.js")
+    script(src="/socket.io/socket.io.js")
+    link(rel="stylesheet" href="/stylesheets/bootstrap.css")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no")
+
+    //script(src="/javascripts/angular-sanitize.min.js")
+    script.
+        var app = angular.module('chat',['socket.io']);
+        app.directive('ngEnter', function() {
+                return function(scope, element, attrs) {
+                    element.bind("keydown keypress", function(event) {
+                        if(event.which === 13 && !event.shiftKey) {
+                                scope.$apply(function(){
+                                        scope.$eval(attrs.ngEnter);
+                                });
+                                
+                                event.preventDefault();
+                        }
+                    });
+                };
+            });
+        var recid; 
+        var is_present = function(arr,obj){
+        for(var i=0;i<arr.length;i++)
+            if(arr[i]._id == obj._id)
+            return i+1;
+        return 0;
+        }
+        app.controller('control',['$scope','$socket',function($scope,$socket){
+
+            
+            angular.element(document.getElementById('imageFile')).on('change',function(e){
+
+               var file=e.target.files[0];
+
+               angular.element(document.getElementById('imageFile')).val('');
+
+               var fileReader=new FileReader();
+
+               fileReader.onload=function(event){
+               $socket.emit('image',event.target.result);
+               }
+
+               fileReader.readAsDataURL(file);
+            });
+
+            $scope.content = [];
+            $scope.message = {};
+            $scope.al = [];
+            $scope.new_messages = 0;
+            //function to hide notification of msg 
+            $scope.hidecol = function(data){
+                document.getElementById(data).style.backgroundColor = "#cfd8dc";
+
+            };
+
+            //end fn
+            $socket.emit('user_data',{name:"#{name}",id:"#{my_id}"})
+            // funtion called on click ----->
+            $scope.send_message = function(data){
+                if($scope.content.indexOf(data) == -1)
+                $scope.content.push(data);
+                var dat = {id1:data._id,id2:"#{my_id}"}
+                $socket.emit('message_list',dat);
+                setTimeout(function(){var get = document.getElementById(data._id);
+                get.scrollTop = get.scrollHeight;},150)
+                var ind = is_present($scope.al,data)
+                if(ind)    
+                {$scope.new_messages-=1;
+                $scope.al.splice(ind-1,1);
+                }
+
+            };
+            // end function
+            $socket.on('display_msgs',function(data){
+                $scope.message[data.rec] = [];
+                for(var i = 0;i < data.res.length ; i++)        
+                        $scope.message[data.rec].push(data.res[i]);   
+
+
+
+                });
+            $scope.send_msgs = function(data){
+                $scope.send_message(data);
+                
+
+
+            }
+            //function called on submit ---->>
+            $scope.submit_m = function(data){
+                recid = data._id;
+                // on receiving data from socket
+                var mes = document.getElementById("^"+recid).value;
+                document.getElementById("^"+recid).value="";
+                
+                if(!$scope.message){
+                    $scope.message = {} ;
+                }
+
+                if(!$scope.message[recid]){
+                    $scope.message[recid] = [];
+                }
+                
+                
+                var get_elem = document.getElementById(recid);
+                get_elem.scrollTop = get_elem.scrollHeight;
+                var mess = {from:"#{my_id}",mes_to:recid,message:mes,from_name:"#{name}"};
+                $scope.message[recid].push(mess);
+                if(data.socket_id){
+                //send to socket
+                
+                $socket.emit('message',{m:mess,on:true});
+
+                }
+
+                else{
+                // send to the offline user
+                $socket.emit('message',{m:mess,on:false});
+
+                }
+
+            };
+            // end function 
+            $socket.on('image_updated',function(data){
+                $scope.image_val = data;
+                document.getElementById('img').innerHTML = '<img src='+data+' width=200px height=200px>';
+                });
+            $socket.on('new_text',function(data){
+                var get = document.getElementById(data.d.from);
+                try{
+                    get.style.backgroundColor="#e0e0e0";
+                    get.scrollTop = get.scrollHeight;
+                    socket.emit('make_msgs_true',{recv:"#{my_id}",sender:data.d.from});
+                }
+                catch(err){
+                    if(!is_present($scope.al,data.r))                    
+                    {
+                    $scope.al.push(data.r);
+                    $scope.new_messages+=1;
+                    
+                    }
+                }
+                try{    
+                    $scope.message[data.d.from].push(data.d);
+                }
+                catch(err){
+                    $scope.message[data.d.from] = [];
+                    $scope.message[data.d.from].push(data.d);
+                }
+                 
+            
+            });
+            $socket.on('unread_msg',function(data){
+                
+                    if(!is_present($scope.al,data)){
+                     $scope.al.push(data); 
+                     $scope.new_messages+=1;
+                    }
+                
+                });
+            $socket.on('list',function(data){
+                 // get unread msgs from db
+                $scope.list = data;
+            });
+
+
+            }]);
+    body(background="/images/background.jpg")
+        .container
+            nav.navbar.navbar-inverse
+              .container-fluid
+                // Brand and toggle get grouped for better mobile display
+                .navbar-header
+                  button.navbar-toggle.collapsed(type="button", data-toggle="collapse", data-target="#bs-example-navbar-collapse-1")
+                    span.sr-only Toggle navigation
+                    span.icon-bar
+                    span.icon-bar
+                    span.icon-bar
+                  //a.navbar-brand(href="#") Brand
+                  span.navbar-text Welcome #{name}
+                // Collect the nav links, forms, and other content for toggling
+                #bs-example-navbar-collapse-1.collapse.navbar-collapse
+                  ul.nav.navbar-nav
+                    li.active
+                      a(href="#")
+                        | Blog
+                        span.sr-only (current)
+                    li
+                      a(href="#") Notice
+                    li.dropdown
+                      a.dropdown-toggle(href="#", data-toggle="dropdown", role="button", aria-expanded="false")
+                        | Mesages
+                        span.badge {{new_messages}}
+                      ul.dropdown-menu(role="menu")
+                        li(ng-repeat="cs in al")
+                          a(href="" ng-click="send_msgs(cs);al.splice($index,1)") {{cs.name}}
+                          // another fn,remove user from al on click and call send_m in it
+                  form.navbar-form.navbar-left(role="search")
+                    .form-group
+                      input.form-control(type="text", placeholder="Search")
+                    button.btn.btn-default(type="submit") Submit
+                  ul.nav.navbar-nav.navbar-right
+                    li
+                      a(href="/logout") Log out 
+
+        
+        .panel.panel-defualt.pull-right.panel-primary
+                .panel-heading Users
+                .panel-body(style="max-height:80%;overflow:auto;")
+                    ul.list-group(ng-repeat="x in list | filter:searchQuery")
+                        div(ng-if='x.socket_id!=false && x.name!="#{name}"')
+                            a(href="",ng-click="send_message(x)")  
+                                span.glyphicon.glyphicon-comment  {{ x.name }}
+                                                
+                        div(ng-if="!x.socket_id")
+                            a(href="",ng-click="send_message(x)")  {{ x.name }}
+                    
+                .panel-footer
+                    input.form-control(placeholder="Search Users" type="text" ng-model="searchQuery.name")
+        
+        span(id="img")
+            span(ng-if="#{show_image}")
+                img.thumbnail(style="border-radius:5px;" src="#{image}" width="200px" height="200px" alt="No image uploaded")
+        input(type="file" id="imageFile" class="filestyle" data-classButton="btn btn-primary" data-input="false" data-classIcon="icon-plus" data-buttonText="Change picture")
+        nav.navbar-fixed-bottom.container
+            .container
+                #open_tabs(ng-repeat="data in content")
+                    ul.pull-right.list-group.col-xs-6.col-sm-3    
+                        li.list-group-item
+                            span {{data.name}}
+                            span.pull-right.label.label-warning.btn(ng-click="content.splice($index,1)") x
+                        li.list-group-item(style="max-height:100px;height:100px;overflow:auto;",id="{{data._id}}")
+                            
+                            span(ng-repeat="mes in message[data._id] track by $index")
+                                div(ng-if='mes.from=="#{my_id}"' style="padding:3px;padding-left:5px;")
+                                    span {{mes.message}}
+                                    br
+                                div(ng-if='mes.from!="#{my_id}"' style="padding:3px;padding-right:5px;")
+                                    span.pull-right {{mes.message}}
+                                    br
+                        li.list-group-item
+                            input.form-control(ng-enter="submit_m(data)" type="text",ng-focus="hidecol(data._id)",id="^{{data._id}}")
+        
+    script(src="javascripts/jquery.min.js")
+    script(src="javascripts/bootstrap-filestyle.js")
+    script(src="javascripts/bootstrap.min.js")
